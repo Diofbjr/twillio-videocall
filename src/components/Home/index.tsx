@@ -8,6 +8,7 @@ export default function Home() {
   const [token, setToken] = useState('');
   const [room, setRoom] = useState<Room | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
   const handleJoinRoom = async () => {
     try {
@@ -51,6 +52,18 @@ export default function Home() {
 
       localVideoTrack.attach(localVideoRef.current);
       localAudioTrack.attach(document.getElementById('local-audio') as HTMLAudioElement);
+
+      room.on('trackSubscribed', (track, participant) => {
+        if (track.kind === 'video' && remoteVideoRef.current) {
+          track.attach(remoteVideoRef.current);
+        }
+      });
+
+      room.on('trackUnsubscribed', (track, participant) => {
+        if (track.kind === 'video' && remoteVideoRef.current) {
+          track.detach(remoteVideoRef.current);
+        }
+      });
     }
   }, [room]);
 
@@ -72,12 +85,11 @@ export default function Home() {
       <button onClick={handleJoinRoom}>Entrar na sala</button>
       
       {/* Renderização da chamada de vídeo */}
-      {room && (
-        <div>
-          <video ref={localVideoRef} autoPlay muted />
-          <audio id="local-audio" autoPlay />
-        </div>
-      )}
+      <div>
+        <video ref={localVideoRef} autoPlay muted />
+        <video ref={remoteVideoRef} autoPlay />
+        <audio id="local-audio" autoPlay />
+      </div>
     </div>
   );
 }

@@ -19,6 +19,10 @@
     "next": "13.4.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+<<<<<<< HEAD
+=======
+    "styled-components": "^6.0.0-rc.1",
+>>>>>>> 8c932996521aeaed092736eb2f306dfa01b83a8a
     "twilio": "^4.11.1",
     "twilio-video": "^2.27.0",
     "typescript": "5.0.4"
