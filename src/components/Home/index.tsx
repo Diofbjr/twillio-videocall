@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import Video, { Room } from 'twilio-video';
+import Video, { Room, RemoteParticipant } from 'twilio-video';
 
 export default function Home() {
   const [roomName, setRoomName] = useState('');
@@ -8,7 +8,7 @@ export default function Home() {
   const [token, setToken] = useState('');
   const [room, setRoom] = useState<Room | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRefs = useRef<Array<HTMLVideoElement | null>>([]);
 
   const handleJoinRoom = async () => {
     try {
@@ -47,25 +47,67 @@ export default function Home() {
   useEffect(() => {
     if (room && localVideoRef.current) {
       const participant = room.localParticipant;
-      const localVideoTrack = Array.from(participant.videoTracks.values())[0].track;
-      const localAudioTrack = Array.from(participant.audioTracks.values())[0].track;
+      const localVideoTrack = Array.from(participant.videoTracks.values())[0]?.track;
+      const localAudioTrack = Array.from(participant.audioTracks.values())[0]?.track;
 
-      localVideoTrack.attach(localVideoRef.current);
-      localAudioTrack.attach(document.getElementById('local-audio') as HTMLAudioElement);
-
-      room.on('trackSubscribed', (track, participant) => {
-        if (track.kind === 'video' && remoteVideoRef.current) {
-          track.attach(remoteVideoRef.current);
-        }
-      });
-
-      room.on('trackUnsubscribed', (track, participant) => {
-        if (track.kind === 'video' && remoteVideoRef.current) {
-          track.detach(remoteVideoRef.current);
-        }
-      });
+      if (localVideoTrack) {
+        localVideoTrack.attach(localVideoRef.current);
+      }
+      if (localAudioTrack) {
+        localAudioTrack.attach(document.getElementById('local-audio') as HTMLAudioElement);
+      }
     }
   }, [room]);
+
+  const [participants, setParticipants] = useState<RemoteParticipant[]>([]);
+
+  useEffect(() => {
+    if (room) {
+      const participantConnected = (participant: RemoteParticipant) => {
+        setParticipants((prevParticipants) => [...prevParticipants, participant]);
+      };
+
+      const participantDisconnected = (participant: RemoteParticipant) => {
+        setParticipants((prevParticipants) => prevParticipants.filter((p) => p !== participant));
+      };
+
+      room.on('participantConnected', participantConnected);
+      room.on('participantDisconnected', participantDisconnected);
+
+      return () => {
+        room.off('participantConnected', participantConnected);
+        room.off('participantDisconnected', participantDisconnected);
+      };
+    }
+  }, [room]);
+
+  useEffect(() => {
+    remoteVideoRefs.current = participants.map(() => null);
+
+    const createVideoTracks = async () => {
+      const videoTracks = await Promise.all(participants.map(() => Video.createLocalVideoTrack()));
+      videoTracks.forEach((track, index) => {
+        const videoRef = document.createElement('video');
+        videoRef.autoplay = true;
+        if (track) {
+          remoteVideoRefs.current[index] = videoRef;
+          track.attach(videoRef);
+        }
+      });
+    };
+
+    createVideoTracks();
+
+    return () => {
+      remoteVideoRefs.current.forEach((videoRef) => {
+        if (videoRef) {
+          videoRef.srcObject = null;
+          videoRef.pause();
+          videoRef.remove();
+        }
+      });
+    };
+  }, [participants]);
 
   return (
     <div>
@@ -83,13 +125,21 @@ export default function Home() {
         onChange={(e) => setIdentity(e.target.value)}
       />
       <button onClick={handleJoinRoom}>Entrar na sala</button>
-      
+
       {/* Renderização da chamada de vídeo */}
-      <div>
-        <video ref={localVideoRef} autoPlay muted />
-        <video ref={remoteVideoRef} autoPlay />
-        <audio id="local-audio" autoPlay />
-      </div>
+      {room && (
+        <div>
+          <video ref={localVideoRef} autoPlay muted />
+          <audio id="local-audio" autoPlay />
+        </div>
+      )}
+
+      {/* Renderização dos vídeos dos participantes remotos */}
+      {participants.map((participant, index) => (
+        <div key={participant.sid}>
+          <video ref={(el) => (remoteVideoRefs.current[index] = el)} autoPlay />
+        </div>
+      ))}
     </div>
   );
 }
