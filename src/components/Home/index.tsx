@@ -8,7 +8,7 @@ export default function Home() {
   const [token, setToken] = useState('');
   const [room, setRoom] = useState<Room | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRefs = useRef<Array<HTMLVideoElement | null>>([]);
+  const remoteParticipantsRef = useRef<RemoteParticipant[]>([]);
 
   const handleJoinRoom = async () => {
     try {
@@ -59,55 +59,34 @@ export default function Home() {
     }
   }, [room]);
 
-  const [participants, setParticipants] = useState<RemoteParticipant[]>([]);
-
   useEffect(() => {
     if (room) {
-      const participantConnected = (participant: RemoteParticipant) => {
-        setParticipants((prevParticipants) => [...prevParticipants, participant]);
-      };
+      room.on('participantConnected', participant => {
+        remoteParticipantsRef.current.push(participant);
+      });
 
-      const participantDisconnected = (participant: RemoteParticipant) => {
-        setParticipants((prevParticipants) => prevParticipants.filter((p) => p !== participant));
-      };
+      room.on('participantDisconnected', participant => {
+        remoteParticipantsRef.current = remoteParticipantsRef.current.filter(p => p !== participant);
+      });
 
-      room.on('participantConnected', participantConnected);
-      room.on('participantDisconnected', participantDisconnected);
+      room.participants.forEach(participant => {
+        const remoteVideoTrack = Array.from(participant.videoTracks.values())[0]?.track;
+        const remoteAudioTrack = Array.from(participant.audioTracks.values())[0]?.track;
 
-      return () => {
-        room.off('participantConnected', participantConnected);
-        room.off('participantDisconnected', participantDisconnected);
-      };
+        if (remoteVideoTrack) {
+          const videoElement = document.createElement('video');
+          remoteVideoTrack.attach(videoElement);
+          document.body.appendChild(videoElement);
+        }
+
+        if (remoteAudioTrack) {
+          const audioElement = document.createElement('audio');
+          remoteAudioTrack.attach(audioElement);
+          document.body.appendChild(audioElement);
+        }
+      });
     }
   }, [room]);
-
-  useEffect(() => {
-    remoteVideoRefs.current = participants.map(() => null);
-
-    const createVideoTracks = async () => {
-      const videoTracks = await Promise.all(participants.map(() => Video.createLocalVideoTrack()));
-      videoTracks.forEach((track, index) => {
-        const videoRef = document.createElement('video');
-        videoRef.autoplay = true;
-        if (track) {
-          remoteVideoRefs.current[index] = videoRef;
-          track.attach(videoRef);
-        }
-      });
-    };
-
-    createVideoTracks();
-
-    return () => {
-      remoteVideoRefs.current.forEach((videoRef) => {
-        if (videoRef) {
-          videoRef.srcObject = null;
-          videoRef.pause();
-          videoRef.remove();
-        }
-      });
-    };
-  }, [participants]);
 
   return (
     <div>
@@ -134,12 +113,15 @@ export default function Home() {
         </div>
       )}
 
-      {/* Renderização dos vídeos dos participantes remotos */}
-      {participants.map((participant, index) => (
-        <div key={participant.sid}>
-          <video ref={(el) => (remoteVideoRefs.current[index] = el)} autoPlay />
-        </div>
-      ))}
+      {/* Renderização dos participantes remotos */}
+      <div className="video-container">
+        {remoteParticipantsRef.current.map(participant => (
+          <div key={participant.sid}>
+            <video autoPlay />
+            <audio autoPlay />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
