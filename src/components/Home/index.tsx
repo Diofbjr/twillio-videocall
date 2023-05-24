@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import Video, { Room, RemoteParticipant, RemoteTrackPublication, LocalVideoTrack } from 'twilio-video';
+import Video, { Room, RemoteParticipant, RemoteTrackPublication, LocalVideoTrack, LocalAudioTrack } from 'twilio-video';
 
 export default function Home() {
   const [roomName, setRoomName] = useState('');
@@ -10,6 +10,7 @@ export default function Home() {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteParticipantsRef = useRef<RemoteParticipant[]>([]);
   const [localVideoTrack, setLocalVideoTrack] = useState<LocalVideoTrack | null>(null);
+  const [localAudioTrack, setLocalAudioTrack] = useState<LocalAudioTrack | null>(null);
   const remoteVideoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
 
   const handleJoinRoom = async () => {
@@ -57,6 +58,7 @@ export default function Home() {
         localVideoTrack.attach(localVideoRef.current);
       }
       if (localAudioTrack) {
+        setLocalAudioTrack(localAudioTrack);
         localAudioTrack.attach(document.getElementById('local-audio') as HTMLAudioElement);
       }
     }
@@ -67,6 +69,12 @@ export default function Home() {
       room.localParticipant.publishTrack(localVideoTrack);
     }
   }, [room, localVideoTrack]);
+
+  useEffect(() => {
+    if (room && localAudioTrack) {
+      room.localParticipant.publishTrack(localAudioTrack);
+    }
+  }, [room, localAudioTrack]);
 
   useEffect(() => {
     if (room) {
@@ -86,11 +94,6 @@ export default function Home() {
           videoElement.srcObject = new MediaStream([track.mediaStreamTrack]);
           document.body.appendChild(videoElement);
           remoteVideoRefs.current[participant.identity] = videoElement;
-          participant.on('trackSubscribed', (track) => {
-            if (track.kind === 'video') {
-              track.attach(localVideoRef.current!);
-            }
-          });
         }
       });
 
@@ -141,11 +144,6 @@ export default function Home() {
               ref={(videoRef) => {
                 if (videoRef) {
                   remoteVideoRefs.current[participant.identity] = videoRef;
-                  participant.on('trackSubscribed', (track) => {
-                    if (track.kind === 'video') {
-                      track.attach(videoRef);
-                    }
-                  });
                 }
               }}
               autoPlay
