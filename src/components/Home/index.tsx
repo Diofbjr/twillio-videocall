@@ -59,7 +59,7 @@ export default function Home() {
       }
       if (localAudioTrack) {
         setLocalAudioTrack(localAudioTrack);
-        localAudioTrack.attach(document.getElementById('local-audio') as HTMLAudioElement);
+        localAudioTrack.attach(document.getElementById('local-audio') as HTMLMediaElement);
       }
     }
   }, [room]);
