@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import Video, { Room, RemoteParticipant } from 'twilio-video';
+import Video, { Room, RemoteParticipant, RemoteTrackPublication, LocalVideoTrack } from 'twilio-video';
 
 export default function Home() {
   const [roomName, setRoomName] = useState('');
@@ -9,15 +9,14 @@ export default function Home() {
   const [room, setRoom] = useState<Room | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteParticipantsRef = useRef<RemoteParticipant[]>([]);
+  const [localVideoTrack, setLocalVideoTrack] = useState<LocalVideoTrack | null>(null);
+  const remoteVideoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
 
   const handleJoinRoom = async () => {
     try {
       const response = await axios.post('/api/videoconference', { roomName, identity });
       const { token } = response.data;
       setToken(token);
-      
-      // Limpar a lista de participantes remotos ao entrar em uma nova sala
-      remoteParticipantsRef.current = [];
     } catch (error) {
       console.error('Erro ao criar token:', error);
     }
@@ -29,7 +28,7 @@ export default function Home() {
         if (token) {
           if (room) {
             // Se já estiver em uma sala, desconecte antes de entrar na nova sala
-            room?.disconnect();
+            room.disconnect();
             setRoom(null);
           }
 
@@ -54,6 +53,7 @@ export default function Home() {
       const localAudioTrack = Array.from(participant.audioTracks.values())[0]?.track;
 
       if (localVideoTrack) {
+        setLocalVideoTrack(localVideoTrack);
         localVideoTrack.attach(localVideoRef.current);
       }
       if (localAudioTrack) {
@@ -63,36 +63,43 @@ export default function Home() {
   }, [room]);
 
   useEffect(() => {
+    if (room && localVideoTrack) {
+      room.localParticipant.publishTrack(localVideoTrack);
+    }
+  }, [room, localVideoTrack]);
+
+  useEffect(() => {
     if (room) {
       room.on('participantConnected', participant => {
-        // Verificar se o participante já existe na lista de remotos antes de adicioná-lo
-        if (!remoteParticipantsRef.current.find(p => p.sid === participant.sid)) {
-          remoteParticipantsRef.current.push(participant);
-        }
+        remoteParticipantsRef.current.push(participant);
       });
 
       room.on('participantDisconnected', participant => {
-        // Remover o participante da lista de remotos ao ser desconectado
         remoteParticipantsRef.current = remoteParticipantsRef.current.filter(p => p !== participant);
+        delete remoteVideoRefs.current[participant.identity];
       });
 
-      // Renderizar os participantes remotos ao entrar na sala
-      room.participants.forEach(participant => {
-        const remoteVideoTrack = Array.from(participant.videoTracks.values())[0]?.track;
-        const remoteAudioTrack = Array.from(participant.audioTracks.values())[0]?.track;
-
-        if (remoteVideoTrack) {
+      room.on('trackSubscribed', (track, publication, participant) => {
+        if (track.kind === 'video') {
           const videoElement = document.createElement('video');
-          remoteVideoTrack.attach(videoElement);
+          videoElement.autoplay = true;
+          videoElement.srcObject = new MediaStream([track.mediaStreamTrack]);
           document.body.appendChild(videoElement);
-        }
-
-        if (remoteAudioTrack) {
-          const audioElement = document.createElement('audio');
-          remoteAudioTrack.attach(audioElement);
-          document.body.appendChild(audioElement);
+          remoteVideoRefs.current[participant.identity] = videoElement;
         }
       });
+      
+
+      room.on('trackUnsubscribed', (track, publication, participant) => {
+        if (track.kind === 'video') {
+          const videoElement = remoteVideoRefs.current[participant.identity];
+          if (videoElement && videoElement.srcObject === new MediaStream([track.mediaStreamTrack])) {
+            videoElement.srcObject = null;
+            videoElement.remove();
+            delete remoteVideoRefs.current[participant.identity];
+          }
+        }
+      });      
     }
   }, [room]);
 
@@ -125,10 +132,15 @@ export default function Home() {
       <div className="video-container">
         {remoteParticipantsRef.current.map(participant => (
           <div key={participant.sid}>
-            {/* Exibir o nome do participante remoto */}
             <p>{participant.identity}</p>
-            <video autoPlay />
-            <audio autoPlay />
+            <video
+              ref={(videoRef) => {
+                if (videoRef) {
+                  remoteVideoRefs.current[participant.identity] = videoRef;
+                }
+              }}
+              autoPlay
+            />
           </div>
         ))}
       </div>
