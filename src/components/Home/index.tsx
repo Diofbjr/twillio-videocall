@@ -15,6 +15,9 @@ export default function Home() {
       const response = await axios.post('/api/videoconference', { roomName, identity });
       const { token } = response.data;
       setToken(token);
+      
+      // Limpar a lista de participantes remotos ao entrar em uma nova sala
+      remoteParticipantsRef.current = [];
     } catch (error) {
       console.error('Erro ao criar token:', error);
     }
@@ -62,13 +65,18 @@ export default function Home() {
   useEffect(() => {
     if (room) {
       room.on('participantConnected', participant => {
-        remoteParticipantsRef.current.push(participant);
+        // Verificar se o participante já existe na lista de remotos antes de adicioná-lo
+        if (!remoteParticipantsRef.current.find(p => p.sid === participant.sid)) {
+          remoteParticipantsRef.current.push(participant);
+        }
       });
 
       room.on('participantDisconnected', participant => {
+        // Remover o participante da lista de remotos ao ser desconectado
         remoteParticipantsRef.current = remoteParticipantsRef.current.filter(p => p !== participant);
       });
 
+      // Renderizar os participantes remotos ao entrar na sala
       room.participants.forEach(participant => {
         const remoteVideoTrack = Array.from(participant.videoTracks.values())[0]?.track;
         const remoteAudioTrack = Array.from(participant.audioTracks.values())[0]?.track;
@@ -117,6 +125,8 @@ export default function Home() {
       <div className="video-container">
         {remoteParticipantsRef.current.map(participant => (
           <div key={participant.sid}>
+            {/* Exibir o nome do participante remoto */}
+            <p>{participant.identity}</p>
             <video autoPlay />
             <audio autoPlay />
           </div>
