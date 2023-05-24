@@ -86,9 +86,13 @@ export default function Home() {
           videoElement.srcObject = new MediaStream([track.mediaStreamTrack]);
           document.body.appendChild(videoElement);
           remoteVideoRefs.current[participant.identity] = videoElement;
+          participant.on('trackSubscribed', (track) => {
+            if (track.kind === 'video') {
+              track.attach(localVideoRef.current!);
+            }
+          });
         }
       });
-      
 
       room.on('trackUnsubscribed', (track, publication, participant) => {
         if (track.kind === 'video') {
@@ -99,7 +103,7 @@ export default function Home() {
             delete remoteVideoRefs.current[participant.identity];
           }
         }
-      });      
+      });
     }
   }, [room]);
 
@@ -137,6 +141,11 @@ export default function Home() {
               ref={(videoRef) => {
                 if (videoRef) {
                   remoteVideoRefs.current[participant.identity] = videoRef;
+                  participant.on('trackSubscribed', (track) => {
+                    if (track.kind === 'video') {
+                      track.attach(videoRef);
+                    }
+                  });
                 }
               }}
               autoPlay
