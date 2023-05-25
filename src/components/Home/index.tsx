@@ -1,19 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import Video, { Room, RemoteParticipant, RemoteTrackPublication, LocalVideoTrack, LocalAudioTrack } from 'twilio-video';
+import Video, {
+  Room,
+  RemoteParticipant,
+  RemoteTrackPublication,
+  LocalVideoTrack,
+  LocalAudioTrack,
+} from 'twilio-video';
 
-export default function Home() {
-  const [roomName, setRoomName] = useState('');
-  const [identity, setIdentity] = useState('');
-  const [token, setToken] = useState('');
+export default function Home(): JSX.Element {
+  const [roomName, setRoomName] = useState<string>('');
+  const [identity, setIdentity] = useState<string>('');
+  const [token, setToken] = useState<string>('');
   const [room, setRoom] = useState<Room | null>(null);
-  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteParticipantsRef = useRef<RemoteParticipant[]>([]);
   const [localVideoTrack, setLocalVideoTrack] = useState<LocalVideoTrack | null>(null);
   const [localAudioTrack, setLocalAudioTrack] = useState<LocalAudioTrack | null>(null);
   const remoteVideoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
 
-  const handleJoinRoom = async () => {
+  const handleJoinRoom = async (): Promise<void> => {
     try {
       const response = await axios.post('/api/videoconference', { roomName, identity });
       const { token } = response.data;
@@ -24,7 +30,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const joinRoom = async () => {
+    const joinRoom = async (): Promise<void> => {
       try {
         if (token) {
           if (room) {
@@ -33,7 +39,7 @@ export default function Home() {
             setRoom(null);
           }
 
-          const newRoom = await Video.connect(token, {
+          const newRoom: Room = await Video.connect(token, {
             name: roomName,
           });
 
@@ -78,16 +84,18 @@ export default function Home() {
 
   useEffect(() => {
     if (room) {
-      room.on('participantConnected', participant => {
+      room.on('participantConnected', (participant: RemoteParticipant) => {
         remoteParticipantsRef.current.push(participant);
       });
 
-      room.on('participantDisconnected', participant => {
-        remoteParticipantsRef.current = remoteParticipantsRef.current.filter(p => p !== participant);
+      room.on('participantDisconnected', (participant: RemoteParticipant) => {
+        remoteParticipantsRef.current = remoteParticipantsRef.current.filter(
+          (p: RemoteParticipant) => p !== participant
+        );
         delete remoteVideoRefs.current[participant.identity];
       });
 
-      room.on('trackSubscribed', (track, publication, participant) => {
+      room.on('trackSubscribed', (track: any, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
         if (track.kind === 'video') {
           const videoElement = document.createElement('video');
           videoElement.autoplay = true;
@@ -97,7 +105,7 @@ export default function Home() {
         }
       });
 
-      room.on('trackUnsubscribed', (track, publication, participant) => {
+      room.on('trackUnsubscribed', (track: any, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
         if (track.kind === 'video') {
           const videoElement = remoteVideoRefs.current[participant.identity];
           if (videoElement && videoElement.srcObject === new MediaStream([track.mediaStreamTrack])) {
@@ -137,11 +145,11 @@ export default function Home() {
 
       {/* Renderização dos participantes remotos */}
       <div className="video-container">
-        {remoteParticipantsRef.current.map(participant => (
+        {remoteParticipantsRef.current.map((participant: RemoteParticipant) => (
           <div key={participant.sid}>
             <p>{participant.identity}</p>
             <video
-              ref={(videoRef) => {
+              ref={(videoRef: HTMLVideoElement | null) => {
                 if (videoRef) {
                   remoteVideoRefs.current[participant.identity] = videoRef;
                 }
