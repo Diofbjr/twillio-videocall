@@ -55,10 +55,15 @@ export default function Home(): JSX.Element {
     if (room && localVideoRef.current) {
       const participant = room.localParticipant;
       const localVideoTrack = Array.from(participant.videoTracks.values())[0]?.track;
+      const localAudioTrack = Array.from(participant.audioTracks.values())[0]?.track;
 
       if (localVideoTrack) {
         setLocalVideoTrack(localVideoTrack);
         localVideoTrack.attach(localVideoRef.current);
+      }
+      if (localAudioTrack) {
+        setLocalAudioTrack(localAudioTrack);
+        localAudioTrack.attach(document.getElementById('local-audio') as HTMLMediaElement);
       }
     }
   }, [room]);
