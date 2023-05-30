@@ -143,7 +143,7 @@ export default function Home(): JSX.Element {
       {/* Renderização da chamada de vídeo */}
       {room && (
         <div>
-          <video ref={localVideoRef} autoPlay/>
+          <video ref={localVideoRef} autoPlay />
           <audio id="local-audio" autoPlay />
         </div>
       )}
