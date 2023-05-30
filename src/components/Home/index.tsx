@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import Video, {
-  Room,
-  RemoteParticipant,
-  RemoteTrackPublication,
-  LocalVideoTrack,
-  LocalAudioTrack,
-} from 'twilio-video';
+import Video, { Room, RemoteParticipant, RemoteTrackPublication, LocalVideoTrack, LocalAudioTrack, createLocalVideoTrack, createLocalAudioTrack } from 'twilio-video';
+
+interface RemoteVideoRefs {
+  [key: string]: { current: HTMLVideoElement | null };
+}
 
 export default function Home(): JSX.Element {
   const [roomName, setRoomName] = useState<string>('');
@@ -17,7 +15,7 @@ export default function Home(): JSX.Element {
   const remoteParticipantsRef = useRef<RemoteParticipant[]>([]);
   const [localVideoTrack, setLocalVideoTrack] = useState<LocalVideoTrack | null>(null);
   const [localAudioTrack, setLocalAudioTrack] = useState<LocalAudioTrack | null>(null);
-  const remoteVideoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
+  const remoteVideoRefs = useRef<RemoteVideoRefs>({});
 
   const handleJoinRoom = async (): Promise<void> => {
     try {
@@ -101,13 +99,13 @@ export default function Home(): JSX.Element {
           videoElement.autoplay = true;
           videoElement.srcObject = new MediaStream([track.mediaStreamTrack]);
           document.body.appendChild(videoElement);
-          remoteVideoRefs.current[participant.identity] = videoElement;
+          remoteVideoRefs.current[participant.identity] = { current: videoElement };
         }
       });
 
       room.on('trackUnsubscribed', (track: any, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
         if (track.kind === 'video') {
-          const videoElement = remoteVideoRefs.current[participant.identity];
+          const videoElement = remoteVideoRefs.current[participant.identity]?.current;
           if (videoElement && videoElement.srcObject === new MediaStream([track.mediaStreamTrack])) {
             videoElement.srcObject = null;
             videoElement.remove();
@@ -117,6 +115,13 @@ export default function Home(): JSX.Element {
       });
     }
   }, [room]);
+
+  useEffect(() => {
+    console.log('room:', room);
+    console.log('localVideoTrack:', localVideoTrack);
+    console.log('localAudioTrack:', localAudioTrack);
+    console.log('remoteParticipants:', remoteParticipantsRef.current);
+  }, [room, localVideoTrack, localAudioTrack]);
 
   return (
     <div>
@@ -138,7 +143,7 @@ export default function Home(): JSX.Element {
       {/* Renderização da chamada de vídeo */}
       {room && (
         <div>
-          <video ref={localVideoRef} autoPlay muted />
+          <video ref={localVideoRef} autoPlay />
           <audio id="local-audio" autoPlay />
         </div>
       )}
@@ -149,9 +154,9 @@ export default function Home(): JSX.Element {
           <div key={participant.sid}>
             <p>{participant.identity}</p>
             <video
-              ref={(videoRef: HTMLVideoElement | null) => {
+              ref={(videoRef) => {
                 if (videoRef) {
-                  remoteVideoRefs.current[participant.identity] = videoRef;
+                  remoteVideoRefs.current[participant.identity] = { current: videoRef };
                 }
               }}
               autoPlay
