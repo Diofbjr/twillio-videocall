@@ -37,11 +37,17 @@ export default function Home(): JSX.Element {
             setRoom(null);
           }
 
+          const localAudioTrack = await createLocalAudioTrack(); // Criar faixa de áudio local
+
           const newRoom: Room = await Video.connect(token, {
             name: roomName,
+            audio: true, // Habilitar áudio ao entrar na sala
+            video: true, // Habilitar vídeo ao entrar na sala
+            tracks: [localAudioTrack], // Adicionar faixa de áudio local à lista de faixas
           });
 
           setRoom(newRoom);
+          setLocalAudioTrack(localAudioTrack); // Atualizar o estado da faixa de áudio local
         }
       } catch (error) {
         console.error('Erro ao entrar na sala:', error);
@@ -55,15 +61,10 @@ export default function Home(): JSX.Element {
     if (room && localVideoRef.current) {
       const participant = room.localParticipant;
       const localVideoTrack = Array.from(participant.videoTracks.values())[0]?.track;
-      const localAudioTrack = Array.from(participant.audioTracks.values())[0]?.track;
 
       if (localVideoTrack) {
         setLocalVideoTrack(localVideoTrack);
         localVideoTrack.attach(localVideoRef.current);
-      }
-      if (localAudioTrack) {
-        setLocalAudioTrack(localAudioTrack);
-        localAudioTrack.attach(document.getElementById('local-audio') as HTMLMediaElement);
       }
     }
   }, [room]);
@@ -73,12 +74,6 @@ export default function Home(): JSX.Element {
       room.localParticipant.publishTrack(localVideoTrack);
     }
   }, [room, localVideoTrack]);
-
-  useEffect(() => {
-    if (room && localAudioTrack) {
-      room.localParticipant.publishTrack(localAudioTrack);
-    }
-  }, [room, localAudioTrack]);
 
   useEffect(() => {
     if (room) {
