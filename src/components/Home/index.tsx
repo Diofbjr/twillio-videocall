@@ -37,17 +37,11 @@ export default function Home(): JSX.Element {
             setRoom(null);
           }
 
-          const localAudioTrack = await createLocalAudioTrack(); // Criar faixa de áudio local
-
           const newRoom: Room = await Video.connect(token, {
             name: roomName,
-            audio: true, // Habilitar áudio ao entrar na sala
-            video: true, // Habilitar vídeo ao entrar na sala
-            tracks: [localAudioTrack], // Adicionar faixa de áudio local à lista de faixas
           });
 
           setRoom(newRoom);
-          setLocalAudioTrack(localAudioTrack); // Atualizar o estado da faixa de áudio local
         }
       } catch (error) {
         console.error('Erro ao entrar na sala:', error);
@@ -114,9 +108,8 @@ export default function Home(): JSX.Element {
   useEffect(() => {
     console.log('room:', room);
     console.log('localVideoTrack:', localVideoTrack);
-    console.log('localAudioTrack:', localAudioTrack);
     console.log('remoteParticipants:', remoteParticipantsRef.current);
-  }, [room, localVideoTrack, localAudioTrack]);
+  }, [room, localVideoTrack]);
 
   return (
     <div>
@@ -139,7 +132,7 @@ export default function Home(): JSX.Element {
       {room && (
         <div>
           <video ref={localVideoRef} autoPlay />
-          <audio id="local-audio" autoPlay />
+          <audio id="local-audio" autoPlay muted={false} />
         </div>
       )}
 
