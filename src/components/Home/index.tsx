@@ -52,21 +52,21 @@ export default function Home(): JSX.Element {
   }, [token, roomName]);
 
   useEffect(() => {
-    if (room && localVideoRef.current) {
-      const participant = room.localParticipant;
-      const localVideoTrack = Array.from(participant.videoTracks.values())[0]?.track;
-      const localAudioTrack = Array.from(participant.audioTracks.values())[0]?.track;
+  if (room && localVideoRef.current) {
+    const participant = room.localParticipant;
+    const localVideoTrack = Array.from(participant.videoTracks.values())[0]?.track;
+    const localAudioTrack = Array.from(participant.audioTracks.values())[0]?.track;
 
-      if (localVideoTrack) {
-        setLocalVideoTrack(localVideoTrack);
-        localVideoTrack.attach(localVideoRef.current);
-      }
-      if (localAudioTrack) {
-        setLocalAudioTrack(localAudioTrack);
-        localAudioTrack.attach(localAudioRef.current!);
-      }
+    if (localVideoTrack) {
+      setLocalVideoTrack(localVideoTrack);
+      localVideoTrack.attach(localVideoRef.current);
     }
-  }, [room]);
+    if (localAudioTrack) {
+      setLocalAudioTrack(localAudioTrack);
+      localAudioTrack.attach(document.getElementById('local-audio') as HTMLMediaElement);
+    }
+  }
+}, [room]);
 
   useEffect(() => {
     if (room && localVideoTrack) {
@@ -78,6 +78,7 @@ export default function Home(): JSX.Element {
     if (room) {
       room.on('participantConnected', (participant: RemoteParticipant) => {
         remoteParticipantsRef.current.push(participant);
+        console.log('participantConnected:', participant.identity);
       });
 
       room.on('participantDisconnected', (participant: RemoteParticipant) => {
@@ -85,6 +86,7 @@ export default function Home(): JSX.Element {
           (p: RemoteParticipant) => p !== participant
         );
         delete remoteVideoRefs.current[participant.identity];
+        console.log('participantDisconnected:', participant.identity);
       });
 
       room.on('trackSubscribed', (track: any, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
@@ -94,6 +96,9 @@ export default function Home(): JSX.Element {
           videoElement.srcObject = new MediaStream([track.mediaStreamTrack]);
           document.body.appendChild(videoElement);
           remoteVideoRefs.current[participant.identity] = { current: videoElement };
+          console.log('trackSubscribed - Video:', participant.identity);
+        } else if (track.kind === 'audio') {
+          console.log('trackSubscribed - Audio:', participant.identity);
         }
       });
 
@@ -104,11 +109,15 @@ export default function Home(): JSX.Element {
             videoElement.srcObject = null;
             videoElement.remove();
             delete remoteVideoRefs.current[participant.identity];
+            console.log('trackUnsubscribed - Video:', participant.identity);
           }
+        } else if (track.kind === 'audio') {
+          console.log('trackUnsubscribed - Audio:', participant.identity);
         }
       });
     }
   }, [room]);
+
 
   useEffect(() => {
     console.log('room:', room);
