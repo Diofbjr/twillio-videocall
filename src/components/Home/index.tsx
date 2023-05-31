@@ -15,6 +15,7 @@ export default function Home(): JSX.Element {
   const remoteParticipantsRef = useRef<RemoteParticipant[]>([]);
   const [localVideoTrack, setLocalVideoTrack] = useState<LocalVideoTrack | null>(null);
   const [localAudioTrack, setLocalAudioTrack] = useState<LocalAudioTrack | null>(null);
+  const localAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteVideoRefs = useRef<RemoteVideoRefs>({});
 
   const handleJoinRoom = async (): Promise<void> => {
@@ -32,7 +33,6 @@ export default function Home(): JSX.Element {
       try {
         if (token) {
           if (room) {
-            // Se já estiver em uma sala, desconecte antes de entrar na nova sala
             room.disconnect();
             setRoom(null);
           }
@@ -63,7 +63,7 @@ export default function Home(): JSX.Element {
       }
       if (localAudioTrack) {
         setLocalAudioTrack(localAudioTrack);
-        localAudioTrack.attach(document.getElementById('local-audio') as HTMLMediaElement);
+        localAudioTrack.attach(localAudioRef.current!);
       }
     }
   }, [room]);
@@ -137,7 +137,7 @@ export default function Home(): JSX.Element {
       {room && (
         <div>
           <video ref={localVideoRef} autoPlay />
-          <audio id="local-audio" autoPlay muted={false} />
+          <audio ref={localAudioRef} autoPlay muted={false} />
         </div>
       )}
 
@@ -147,11 +147,7 @@ export default function Home(): JSX.Element {
           <div key={participant.sid}>
             <p>{participant.identity}</p>
             <video
-              ref={(videoRef) => {
-                if (videoRef) {
-                  remoteVideoRefs.current[participant.identity] = { current: videoRef };
-                }
-              }}
+              ref={remoteVideoRefs.current[participant.identity]}
               autoPlay
             />
           </div>
