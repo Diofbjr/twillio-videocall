@@ -15,7 +15,6 @@ export default function Home(): JSX.Element {
   const remoteParticipantsRef = useRef<RemoteParticipant[]>([]);
   const [localVideoTrack, setLocalVideoTrack] = useState<LocalVideoTrack | null>(null);
   const [localAudioTrack, setLocalAudioTrack] = useState<LocalAudioTrack | null>(null);
-  const localAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteVideoRefs = useRef<RemoteVideoRefs>({});
 
   const handleJoinRoom = async (): Promise<void> => {
@@ -52,27 +51,27 @@ export default function Home(): JSX.Element {
   }, [token, roomName]);
 
   useEffect(() => {
-  if (room && localVideoRef.current) {
-    const participant = room.localParticipant;
-    const localVideoTrack = Array.from(participant.videoTracks.values())[0]?.track;
-    const localAudioTrack = Array.from(participant.audioTracks.values())[0]?.track;
+    if (room && localVideoRef.current) {
+      const participant = room.localParticipant;
+      const localVideoTrack = Array.from(participant.videoTracks.values())[0]?.track;
+      const localAudioTrack = Array.from(participant.audioTracks.values())[0]?.track;
 
-    if (localVideoTrack) {
-      setLocalVideoTrack(localVideoTrack);
-      localVideoTrack.attach(localVideoRef.current);
+      if (localVideoTrack) {
+        setLocalVideoTrack(localVideoTrack);
+        localVideoTrack.attach(localVideoRef.current);
+      }
+      if (localAudioTrack) {
+        setLocalAudioTrack(localAudioTrack);
+      }
     }
-    if (localAudioTrack) {
-      setLocalAudioTrack(localAudioTrack);
-      localAudioTrack.attach(document.getElementById('local-audio') as HTMLMediaElement);
-    }
-  }
-}, [room]);
+  }, [room]);
 
   useEffect(() => {
-    if (room && localVideoTrack) {
+    if (room && localVideoTrack && localAudioTrack) {
       room.localParticipant.publishTrack(localVideoTrack);
+      room.localParticipant.publishTrack(localAudioTrack);
     }
-  }, [room, localVideoTrack]);
+  }, [room, localVideoTrack, localAudioTrack]);
 
   useEffect(() => {
     if (room) {
@@ -118,7 +117,6 @@ export default function Home(): JSX.Element {
     }
   }, [room]);
 
-
   useEffect(() => {
     console.log('room:', room);
     console.log('localVideoTrack:', localVideoTrack);
@@ -146,7 +144,7 @@ export default function Home(): JSX.Element {
       {room && (
         <div>
           <video ref={localVideoRef} autoPlay />
-          <audio ref={localAudioRef} autoPlay muted={false} />
+          <audio autoPlay />
         </div>
       )}
 
