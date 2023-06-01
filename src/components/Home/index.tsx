@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import axios from 'axios';
 import Video, { Room, RemoteParticipant, RemoteTrackPublication, LocalVideoTrack, LocalAudioTrack, createLocalVideoTrack, createLocalAudioTrack } from 'twilio-video';
 
@@ -19,7 +19,7 @@ export default function Home(): JSX.Element {
 
   const handleJoinRoom = async (): Promise<void> => {
     try {
-      const response = await axios.post('/api/videoconference', { roomName, identity });
+      const response = await axios.post<{ token: string }>('/api/videoconference', { roomName, identity });
       const { token } = response.data;
       setToken(token);
     } catch (error) {
@@ -123,6 +123,14 @@ export default function Home(): JSX.Element {
     console.log('remoteParticipants:', remoteParticipantsRef.current);
   }, [room, localVideoTrack]);
 
+  const handleRoomNameChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    setRoomName(e.target.value);
+  };
+
+  const handleIdentityChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    setIdentity(e.target.value);
+  };
+
   return (
     <div>
       <h1>Videoconferência</h1>
@@ -130,13 +138,13 @@ export default function Home(): JSX.Element {
         type="text"
         placeholder="Nome da sala"
         value={roomName}
-        onChange={(e) => setRoomName(e.target.value)}
+        onChange={handleRoomNameChange}
       />
       <input
         type="text"
         placeholder="Seu nome"
         value={identity}
-        onChange={(e) => setIdentity(e.target.value)}
+        onChange={handleIdentityChange}
       />
       <button onClick={handleJoinRoom}>Entrar na sala</button>
 
