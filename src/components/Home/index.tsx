@@ -12,6 +12,7 @@ export default function Home(): JSX.Element {
   const [token, setToken] = useState<string>('');
   const [room, setRoom] = useState<Room | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const localAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteParticipantsRef = useRef<RemoteParticipant[]>([]);
   const [localVideoTrack, setLocalVideoTrack] = useState<LocalVideoTrack | null>(null);
   const [localAudioTrack, setLocalAudioTrack] = useState<LocalAudioTrack | null>(null);
@@ -38,6 +39,8 @@ export default function Home(): JSX.Element {
 
           const newRoom: Room = await Video.connect(token, {
             name: roomName,
+            audio: true, // Habilitar o uso de áudio na sala
+            video: true, // Habilitar o uso de vídeo na sala
           });
 
           setRoom(newRoom);
@@ -120,8 +123,9 @@ export default function Home(): JSX.Element {
   useEffect(() => {
     console.log('room:', room);
     console.log('localVideoTrack:', localVideoTrack);
+    console.log('localAudioTrack:', localAudioTrack);
     console.log('remoteParticipants:', remoteParticipantsRef.current);
-  }, [room, localVideoTrack]);
+  }, [room, localVideoTrack, localAudioTrack]);
 
   const handleRoomNameChange = (e: ChangeEvent<HTMLInputElement>): void => {
     setRoomName(e.target.value);
@@ -152,7 +156,7 @@ export default function Home(): JSX.Element {
       {room && (
         <div>
           <video ref={localVideoRef} autoPlay />
-          <audio autoPlay />
+          <audio ref={localAudioRef} autoPlay /> {/* Adicione esta linha para reproduzir o áudio local */}
         </div>
       )}
 
