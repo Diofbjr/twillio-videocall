@@ -29,6 +29,7 @@ export default function DevicesPreset({}: DevicesPresetProps) {
 
   const joinVideoClicked = async () => {
     setLoading(true);
+    console.log(loading)
 
     // Setup a local data track to be used per participant
     const dataTrack = new Video.LocalDataTrack({
