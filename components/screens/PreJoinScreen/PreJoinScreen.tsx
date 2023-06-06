@@ -3,12 +3,11 @@ import { Flex } from "@twilio-paste/core";
 
 import { useVideoStore, VideoAppState } from "../../../store/store";
 import { CenterContent } from "../../styled";
-import TwilioHeading from "../../TwilioHeading/TwilioHeading";
 import PermissionCheck from "./PermissionCheck/PermissionCheck";
 import DevicesPreset from "./DevicesPreset/DevicesPreset";
 
 export default function PreJoinScreen() {
-  const { formData, devicePermissions, hasSkippedPermissionCheck } =
+  const {devicePermissions, hasSkippedPermissionCheck } =
     useVideoStore((state: VideoAppState) => state);
   const [showPerms, setShowPerms] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
