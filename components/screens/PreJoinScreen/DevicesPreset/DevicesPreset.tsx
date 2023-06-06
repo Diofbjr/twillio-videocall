@@ -1,32 +1,24 @@
 import React, { useEffect, useState } from "react";
 import * as Video from "twilio-video";
-import { useToaster } from "@twilio-paste/core/toast";
 import { MdErrorOutline } from "react-icons/md";
-
 import {
   UIStep,
   useVideoStore,
   VideoAppState,
 } from "../../../../store/store";
 import { MaxWidthDiv } from "../../../styled";
-import { SELECTED_VIDEO_INPUT_KEY, TEXT_COPY } from "../../../../lib/constants";
+import {  TEXT_COPY } from "../../../../lib/constants";
 import { useGetToken } from "../../../../lib/api";
-import PermissionsWarning from "../PermissionsWarning/PermissionsWarning";
 
 interface DevicesPresetProps {}
 
 export default function DevicesPreset({}: DevicesPresetProps) {
-  const toaster = useToaster();
-  const { HELP_TEXT_PRELIGHT_FAILED, HELP_TEXT_PRELIGHT_PASSED } = TEXT_COPY;
+  const { HELP_TEXT_PRELIGHT_FAILED} = TEXT_COPY;
   const { formData } = useVideoStore((state: VideoAppState) => state);
   const {
-    localTracks,
     setLocalTracks,
-    clearTrack,
     setActiveRoom,
     setUIStep,
-    devicePermissions,
-    setDevicePermissions,
   } = useVideoStore((state: VideoAppState) => state);
   const [preflightStatus, setPreflightStatus] = useState("idle");
 
@@ -34,8 +26,6 @@ export default function DevicesPreset({}: DevicesPresetProps) {
   const { data, status: tokenStatus } = useGetToken(roomName, identity);
   const [loading, setLoading] = useState(false);
 
-  const localVideo = localTracks.video;
-  const localAudio = localTracks.audio;
 
   const joinVideoClicked = async () => {
     setLoading(true);
