@@ -1,0 +1,42 @@
+{
+    "theme_color": "#F6E0D2",
+    "background_color": "#0E5C73",
+    "display": "standalone",
+    "scope": "/",
+    "start_url": "/",
+    "name": "Precision Data",
+    "short_name": "Precision Data",
+    "icons": [
+      {
+        "src": "/icon-192x192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "/icon-256x256.png",
+        "sizes": "256x256",
+        "type": "image/png"
+      },
+      {
+        "src": "/icon-384x384.png",
+        "sizes": "384x384",
+        "type": "image/png"
+      },
+      {
+        "src": "/icon-512x512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ],
+    "lang": "pt",
+    "orientation": "any",
+    "display_override": [
+      "standalone"
+    ],
+    "categories": [
+      "education",
+      "health",
+      "medical"
+    ],
+    "description": "Aplicativo dedicado a tele atendimento do cliente."
+  }
